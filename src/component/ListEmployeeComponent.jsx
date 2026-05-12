@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { listAllEmployee } from "../services/EmployeeServices";
-
 import { useNavigate,useParams } from "react-router";
 import { getEmployeeById,deleteEmployeeById } from './../services/EmployeeServices';
+import { toast } from "react-toastify";
 
 const ListEmployeeComponent = () => {
   const [employees, setEmployees] = useState([]);
+  const [showModal,setShowModal]=useState(false)
+  const [deleteId,setDeleteId]=useState(null)
   const navigator=useNavigate();
   const {id}=useParams()
 
@@ -25,13 +27,29 @@ const ListEmployeeComponent = () => {
   }
   function deleteEmployee(id)
   {
-    if(getEmployeeById(id))
-    {
-      
-    }
+    setDeleteId(id)
+    setShowModal(true)
   }
+
+const handelConfirm = async () => {
+    try {
+        await deleteEmployeeById(deleteId)
+        setEmployees(prev => 
+            prev.filter(emp => emp.id !== Number(deleteId))  // ✅ Number() fixes type mismatch
+        )
+        toast.success("Deleted successfully!")
+    } catch(error) {
+        console.log("Error:", error.response?.status, error.response?.data)
+        toast.error("Failed to delete.")
+    } finally {
+        setShowModal(false)
+        setDeleteId(null)
+    }
+}
+
   return (
     <>
+
       <h2>List of Employees</h2>
       <table className="table">
         <thead>
@@ -91,6 +109,36 @@ const ListEmployeeComponent = () => {
           ))}
         </tbody>
       </table>
+      {showModal && (
+        <>
+          <div className="modal-backdrop fade show"></div>
+          <div className="modal fade show d-block" tabIndex="-1">
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Confirm Delete</h5>
+                  <button className="btn-close"
+                    onClick={() => setShowModal(false)}/>
+                </div>
+                <div className="modal-body">
+                  <p>Are you sure you want to delete employee <strong>ID: {deleteId}</strong>?</p>
+                  <p className="text-danger">This action cannot be undone.</p>
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-secondary"
+                    onClick={() => setShowModal(false)}>
+                    Cancel
+                  </button>
+                  <button className="btn btn-danger"
+                    onClick={handelConfirm}>   {/* ✅ correct spelling */}
+                    Yes, Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 };
